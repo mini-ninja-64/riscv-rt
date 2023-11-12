@@ -368,6 +368,8 @@ mod asm;
 
 use core::sync::atomic::{compiler_fence, Ordering};
 
+use riscv::register::{sstatus::FS, mstatus, misa};
+
 #[cfg(feature = "s-mode")]
 use riscv::register::{scause as xcause, stvec as xtvec, stvec::TrapMode as xTrapMode};
 
@@ -512,8 +514,13 @@ pub unsafe extern "C" fn start_rust(a0: usize, a1: usize, a2: usize) -> ! {
         compiler_fence(Ordering::SeqCst);
     }
 
-    // TODO: Enable FPU when available
-
+    let has_fpu = misa::read()
+        .map(|misa| misa.has_extension('F'))
+        .unwrap_or(false);
+    if has_fpu {
+        mstatus::set_fs(FS::Initial)
+    }
+    
     _setup_interrupts();
 
     main(a0, a1, a2);
