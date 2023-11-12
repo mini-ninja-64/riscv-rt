@@ -514,11 +514,13 @@ pub unsafe extern "C" fn start_rust(a0: usize, a1: usize, a2: usize) -> ! {
         compiler_fence(Ordering::SeqCst);
     }
 
-    let has_fpu = misa::read()
-        .map(|misa| misa.has_extension('F'))
-        .unwrap_or(false);
-    if has_fpu {
-        mstatus::set_fs(FS::Initial)
+    let misa = misa::read();
+    if misa.is_some() {
+        let misa = misa.unwrap();
+        
+        if misa.has_extension('F') {
+            mstatus::set_fs(FS::Initial)
+        }
     }
     
     _setup_interrupts();
